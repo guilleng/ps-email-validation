@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+	<name>psemailvalidation</name>
+	<displayName><![CDATA[Activate account by email]]></displayName>
+	<version><![CDATA[1.0.0]]></version>
+	<description><![CDATA[Sends a validation link to the user\'s email address at registration.]]></description>
+	<author><![CDATA[sincerity]]></author>
+	<tab><![CDATA[administration]]></tab>
+	<is_configurable>1</is_configurable>
+	<need_instance>1</need_instance>
+</module>
