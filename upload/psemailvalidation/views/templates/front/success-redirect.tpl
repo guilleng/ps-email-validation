@@ -15,7 +15,7 @@
     <p>
   </div>
   <script>
-    var countdown = {$delay/1000}; // Convert ms to seconds
+    var countdown = {$delay/1000};
     var countdownElement = document.getElementById("countdown");
 
     var timer = setInterval(function() {

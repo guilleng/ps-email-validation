@@ -30,88 +30,145 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
 
         $token = pSQL(Tools::getValue('token'));
 
-        if ($id = $this->verify($token)) {
-            $this->activateCustomer($id);
-            $this->loginCustomer($id);
-        } else {
-            $this->setTemplate('module:psemailvalidation/views/templates/front/failure.tpl');
+        if (!$token) {
+            $this->handleError($this->module->l('It seems you provided an invalid activation token.', 'activate'));
+            return;
         }
-    }
 
-    private function verify($token)
-    {
-        $sql = 'SELECT psemailvalidation_activation_expire, id_customer
-                FROM ' . _DB_PREFIX_ . 'customer 
-                WHERE psemailvalidation_activation_token = "' . pSQL($token) . '"';
-
-        $db = Db::getInstance();
-        $data = $db->getRow($sql);
+        $data = $this->getValidationData($token);
 
         if (!$data) {
-            return false;
+            $this->handleError($this->module->l('It seems you provided an invalid activation token.', 'activate'));
+            return;
+        } else {
+            $this->nullifyEntry($token);
         }
 
-        if (strtotime($data['psemailvalidation_activation_expire']) < time()) {
-            return false;
+        $dateAdded  = $data['date_added'];
+        $customerId = (int)$data['customer_id'];
+        $cartId     = (int)$data['visitor_cart_id'];
+
+        if ($this->isTokenExpired($dateAdded)) {
+            $this->handleError($this->module->l('Your token is expired.', 'activate'));
+            return;
         }
 
-        return (int) $data['id_customer'];
+        if (!$this->activateCustomer($customerId)) {
+            $this->handleError($this->module->l('There was a problem activating your account.', 'activate'));
+            return;
+        }
+
+        $this->loginCustomer($customerId);
+
+        if ($cartId && $this->promoteCart($cartId)) {
+            $this->redirectToCheckout();
+        } else {
+            $this->redirectToAccountPage();
+        }
     }
 
-    private function activateCustomer($id)
+    private function getValidationData($token)
     {
-        $sql = 'UPDATE ' . _DB_PREFIX_ . 'customer 
-                SET active = 1, psemailvalidation_activation_token = NULL
-                WHERE id_customer = ' . (int)$id;
+        $sql = 'SELECT customer_id, visitor_cart_id, date_added 
+                FROM ' . _DB_PREFIX_ . 'psemailvalidation 
+                WHERE token = "' . pSQL($token) . '"';
 
-        Db::getInstance()->execute($sql);
+        return Db::getInstance()->getRow($sql);
     }
 
-    private function loginCustomer($id)
+    private function nullifyEntry($token)
     {
-        $customer = new Customer($id);
+        $epochZero  = "1970-01-01 00:00:00";
+        $newToken   = bin2hex(random_bytes(16));
+
+        $sql = 'UPDATE ' . _DB_PREFIX_ . 'psemailvalidation 
+                SET token = "' . $newToken . '", date_added = "' . $epochZero . '"
+                WHERE token = "' . $token . '"';
+
+        return Db::getInstance()->getRow($sql);
+    }
+
+    private function isTokenExpired($dateAdded)
+    {
+        return strtotime($dateAdded) < (time() - 5 * 3600);
+    }
+
+    private function activateCustomer($customerId)
+    {
+        $customer = new Customer($customerId);
         if (!Validate::isLoadedObject($customer)) {
-            $this->setTemplate('module:psemailvalidation/views/templates/front/failure.tpl');
+            return false;
+        }
+
+        $customer->active = true;
+        return $customer->save();
+    }
+
+    private function loginCustomer($customerId)
+    {
+        $customer = new Customer($customerId);
+        if (!Validate::isLoadedObject($customer)) {
             return;
         }
 
         Hook::exec('actionBeforeAuthentication');
 
         $this->context->customer = $customer;
-        $this->context->cookie->id_customer = (int)$customer->id;
-        $this->context->cookie->customer_lastname = $customer->lastname;
-        $this->context->cookie->customer_firstname = $customer->firstname;
-        $this->context->cookie->email = $customer->email;
-        $this->context->cookie->passwd = $customer->passwd;
-        $this->context->cookie->logged = 1;
-        $this->context->cookie->write();
+        $cookie = $this->context->cookie;
+        $cookie->id_customer = (int)$customer->id;
+        $cookie->customer_lastname = $customer->lastname;
+        $cookie->customer_firstname = $customer->firstname;
+        $cookie->email = $customer->email;
+        $cookie->passwd = $customer->passwd;
+        $cookie->logged = 1;
+        $cookie->write();
+
         $this->context->updateCustomer($customer);
 
         Hook::exec('actionAuthentication', ['customer' => $customer]);
-
-        $products = $this->context->cart->getProducts();
-        if (count($products) > 0) {
-            $this->redirectToCheckout();
-        } else {              
-            $this->redirectToAccountPage();
-        } 
     }
 
-    private function redirectToCheckout() 
+    /**
+     * Attach the visitor cart to the customer's session.
+     */
+    private function promoteCart($cartId)
+    {
+        if (!$cartId) {
+            return false;
+        }
+
+        $cart = new Cart($cartId);
+        if (!Validate::isLoadedObject($cart)) {
+            return false;
+        }
+
+        $this->context->cart = $cart;
+        $cookie = $this->context->cookie;
+        $cookie->id_cart = (int)$cart->id;
+        $cookie->write();
+        $cart->update();
+
+        return count($cart->getProducts()) > 0;
+    }
+
+    private function redirectToCheckout()
     {
         $this->context->smarty->assign([
-            'redirectUrl'  => $this->context->link->getPageLink('order'),
-            'delay'        => 5000,
+            'redirectUrl' => $this->context->link->getPageLink('order'),
+            'delay'       => 3000,
         ]);
-        $this->setTemplate('module:psemailvalidation/views/templates/front/success-redirect.tpl');
+        $this->setTemplate('module:' . $this->module->name . '/views/templates/front/success-redirect.tpl');
     }
 
-    private function redirectToAccountPage() 
+    private function redirectToAccountPage()
     {
-        $this->info[] = $this->module->l(
-            'Successful verification! You may now use your credentials the next time you log in.',
-            'activate'
-        );
-        $this->redirectWithNotifications('index.php?controller=authentication');             
+        $this->info[] = $this->module->l('Successful verification! You may now use your credentials the next time you log in.', 'activate');
+        $this->redirectWithNotifications('index.php?controller=authentication');
+    }
+
+    private function handleError($message)
+    {
+        $this->context->smarty->assign(['error_message' => $message]);
+        $this->setTemplate('module:' . $this->module->name . '/views/templates/front/failure.tpl');
     }
 }

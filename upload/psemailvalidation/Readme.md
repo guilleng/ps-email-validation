@@ -6,20 +6,18 @@ an account in your shop.  Offers seamless post-validation login and cart
 recovery.
 
 
-**Tested on:** PrestaShop 8.1.x (Compatible with 1.7.x and 8.x – use with 
-caution in other versions).
+**Tested on PrestaShop 8.1.x** (Should be compatible with 1.7.x)
 
 
 Features
 --------
 
-+ Verification link (valid for 5 hours) sent post-registration.
-+ Shows the user the email to which the validation link has been sent giving 
-  them a chance to check for typos on the address.
-+ One-time-use validation link.
-+ Automatic login
-+ Cart recovery and checkout redirect (If 'Re-display cart at login' is enabled 
-  in the shop settings)
++ Verification link valid for 5 hours, one-time-use.
++ Shows users the email to which the validation link has been sent giving them a
+  chance to check for typos on the address.
++ Validation link automatically logins the user.
++ Visitor to customer conversion conserves the products the user added to the 
+  cart before the promotion redirecting to checkout.
 
 
 Requirements
@@ -34,11 +32,13 @@ Installation
 Either upload the `zip` file from the Back Office, or manually upload the module 
 directory to your `modules` folder in your Prestashop installation directory.
 
++ [Download](https://github.com/guilleng/ps-email-validation/raw/master/psemailvalidation.zip)
+
 
 Configuration
 -------------
 
-Enable/disable the module via its dashboard.
+Enable/disable switch in the Back Office dashboard.
 
 
 Development

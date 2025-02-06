@@ -57,36 +57,25 @@ class Psemailvalidation extends Module
      */
     public function install()
     {
-        Configuration::updateValue('PSEMAILVALIDATION_LIVE_MODE', false);
+        Configuration::updateValue('PSEMAILVALIDATION_LIVE_MODE', true);
+
+        include(dirname(__FILE__).'/sql/install.php');
 
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('displayBackOfficeHeader') &&
-            $this->registerHook('createAccount') &&
-            Db::getInstance()->execute(
-                'ALTER TABLE ' . _DB_PREFIX_ . 'customer 
-                ADD psemailvalidation_activation_token char(32)') &&
-            Db::getInstance()->execute(
-                'ALTER TABLE ' . _DB_PREFIX_ . 
-                'customer ADD psemailvalidation_activation_expire DATETIME');
+            $this->registerHook('createAccount');
     }
 
     public function uninstall()
     {
         Configuration::deleteByName('PSEMAILVALIDATION_LIVE_MODE');
 
-        $dropToken = Db::getInstance()->execute(
-            "ALTER TABLE " . _DB_PREFIX_ . "customer 
-            DROP COLUMN psemailvalidation_activation_token"
-        );
-        
-        $dropExpire = Db::getInstance()->execute(
-            "ALTER TABLE " . _DB_PREFIX_ . "customer 
-            DROP COLUMN psemailvalidation_activation_expire"
-        );
+        include(dirname(__FILE__).'/sql/uninstall.php');
     
-        return parent::uninstall() && $this->unregisterHook('createAccount') && $dropToken && $dropExpire;
+        return parent::uninstall() && $this->unregisterHook('createAccount');
     }
+
 
     /**
      * Load the configuration form
@@ -220,38 +209,51 @@ class Psemailvalidation extends Module
             return;
         }
 
-        $this->context->customer->logout();
+        $customer = $this->context->customer;
+        $customer->active = false;
+        $customer->logout();
+        $customer->save();
 
-        $activationToken  = bin2hex(random_bytes(16));
-        $activationExpire = date('Y-m-d H:i:s', strtotime('+5 hours'));
-        $customerId       = $params['newCustomer']->id;
-        $activationLink   = $this->context->link->getModuleLink($this->name, 'activate') . '?token=' . $activationToken;
+        $activationToken = bin2hex(random_bytes(16));
+        $cartId = isset($params['cart']->id) ? (int)$params['cart']->id : 0;
 
-        $sql = 'UPDATE ' . _DB_PREFIX_ . 'customer 
-                SET active = 0, 
-                    psemailvalidation_activation_token = "' . $activationToken . '", 
-                    psemailvalidation_activation_expire = "' . $activationExpire . '" 
-                WHERE id_customer = ' . $customerId;
+        // Insert the data into the database
+        $sql = 'INSERT INTO ' . _DB_PREFIX_ . 'psemailvalidation (
+                    customer_id, visitor_cart_id, token
+                ) VALUES (
+                    ' . $customer->id . ',
+                    ' . $cartId . ',
+                    "' . $activationToken . '"
+                )';
+        if (!Db::getInstance()->execute($sql)) {
+            PrestaShopLogger::addLog('Failed to insert customer into ' . $this->name . 'table. id_customer: ' . $customer->id, 3);
+            Tools::redirect($this->context->link->getModuleLink($this->name, 'failure'));
+        }
 
-        Db::getInstance()->execute($sql);
-
-        $customer = new Customer($customerId);
-        $customer->getFields();
-
-        Mail::Send($this->context->customer->id_lang,
-                   'validate_email',
-                   $this->l('Email Confirmation', 'psemailvalidation'),
-                   array('{firstname}' => $customer->firstname,
-                         '{lastname}' => $customer->lastname,
-                         '{email}' => $customer->email,
-                         '{link}' => $activationLink),
-                   $customer->email,
-                   NULL,
-                   NULL,
-                   NULL,
-                   NULL,
-                   NULL,
-            _PS_MODULE_DIR_ . 'psemailvalidation/mails');
+        // Send the link
+        $activationLink = $this->context->link->getModuleLink($this->name, 'activate', ['token' => $activationToken]);
+        $emailSent = Mail::Send(
+            (int) Context::getContext()->language->id,
+            'validate_email',
+            $this->l('Email Validation'),
+            [
+                '{firstname}' => $customer->firstname,
+                '{lastname}'  => $customer->lastname,
+                '{email}'     => $customer->email,
+                '{link}'      => $activationLink,
+            ],
+            $customer->email,
+            null,
+            null,
+            null,
+            null,
+            null,
+            _PS_MODULE_DIR_ . $this->name . '/mails/'
+        );
+        if (!$emailSent) {
+            PrestaShopLogger::addLog('Failed to send email from ' . $this->name . 'to ' . $customer->email, 3);
+            Tools::redirect($this->context->link->getModuleLink($this->name, 'failure'));
+        }
 
         $this->context->cookie->email_to_validate = $customer->email;
         Tools::redirect($this->context->link->getModuleLink($this->name, 'emailsentmessage'));

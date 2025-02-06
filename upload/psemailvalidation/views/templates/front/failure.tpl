@@ -4,9 +4,9 @@
   <div id="custom-text">
     <h1>{l s='Oops...' mod='psemailvalidation'}</h1>
     <p>
-      <br>
-      {l s='There was a problem activating your account.' mod='psemailvalidation'}<br><br>
-      {l s='If you are sure that you used the link we sent you, get in touch with support.' mod='psemailvalidation'}
+      {l s='We ran into an issue while signing you in.' mod='psemailvalidation'}<br>
+      <strong>{$error_message}</strong><br>
+      {l s='Please, get in touch with support.' mod='psemailvalidation'}
     </p>
   </div>
 {/block}
