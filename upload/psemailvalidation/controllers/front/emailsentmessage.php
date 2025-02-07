@@ -1,6 +1,6 @@
 <?php
 /*
- * @copyright     Copyright 2025 sincerity
+ * @copyright     Copyright since 2025 sincerity
  * @license       GNU/GPL 2 or later
  *
  * This program is free software; you can redistribute it and/or
