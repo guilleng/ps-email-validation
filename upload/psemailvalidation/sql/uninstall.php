@@ -1,7 +1,8 @@
 <?php
-/*
- * @copyright     Copyright 2025 sincerity
- * @license       GNU/GPL 2 or later
+/**
+ * @author    Guille Garay <guillegaray@guillegaray.com>
+ * @copyright Since 2025 Guille Garay
+ * @license   GNU/GPL 2 or later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,12 +20,14 @@
  *
  * The "GNU General Public License" (GPL) is available at
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
- *
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
-$sql = array();
+$sql = [];
 
-$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'psemailvalidation`'; 
+$sql[] = 'DROP TABLE IF EXISTS `' . _DB_PREFIX_ . 'psemailvalidation`';
 
 foreach ($sql as $query) {
     if (Db::getInstance()->execute($query) == false) {

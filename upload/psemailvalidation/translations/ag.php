@@ -1,8 +1,7 @@
 <?php
 
 global $_MODULE;
-$_MODULE = array();
-$_MODULE['<{psemailvalidation}prestashop>psemailvalidation_562718698659eab689fb0e81307b3724'] = 'Validar e-mail';
+$_MODULE = [];
 $_MODULE['<{psemailvalidation}prestashop>success-redirect_78c9225476e603696fcd82e63c2bb212'] = '¡Verificación exitosa!';
 $_MODULE['<{psemailvalidation}prestashop>success-redirect_80242fdbfeea36eb6ad3dfa66925409e'] = 'Serás redirigido al';
 $_MODULE['<{psemailvalidation}prestashop>success-redirect_177627f91af678a9b03e993f1a91917f'] = 'checkout';

@@ -6,9 +6,6 @@ an account in your shop.  Offers seamless post-validation login and cart
 recovery.
 
 
-**Tested on PrestaShop 8.1.x** (Should be compatible with 1.7.x)
-
-
 Features
 --------
 
