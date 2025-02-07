@@ -1,7 +1,8 @@
 <?php
-/*
- * @copyright     Copyright 2025 sincerity
- * @license       GNU/GPL 2 or later
+/**
+ * @author    Guille Garay <guillegaray@guillegaray.com>
+ * @copyright Since 2025 Guille Garay
+ * @license   GNU/GPL 2 or later
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,8 +20,10 @@
  *
  * The "GNU General Public License" (GPL) is available at
  * http://www.gnu.org/licenses/old-licenses/gpl-2.0.html
- *
  */
+if (!defined('_PS_VERSION_')) {
+    exit;
+}
 
 class psemailvalidationactivateModuleFrontController extends ModuleFrontController
 {
@@ -32,6 +35,7 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
 
         if (!$token) {
             $this->handleError($this->module->l('It seems you provided an invalid activation token.', 'activate'));
+
             return;
         }
 
@@ -39,22 +43,25 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
 
         if (!$data) {
             $this->handleError($this->module->l('It seems you provided an invalid activation token.', 'activate'));
+
             return;
         } else {
             $this->nullifyEntry($token);
         }
 
-        $dateAdded  = $data['date_added'];
-        $customerId = (int)$data['customer_id'];
-        $cartId     = (int)$data['visitor_cart_id'];
+        $dateAdded = $data['date_added'];
+        $customerId = (int) $data['customer_id'];
+        $cartId = (int) $data['visitor_cart_id'];
 
         if ($this->isTokenExpired($dateAdded)) {
             $this->handleError($this->module->l('Your token is expired.', 'activate'));
+
             return;
         }
 
         if (!$this->activateCustomer($customerId)) {
             $this->handleError($this->module->l('There was a problem activating your account.', 'activate'));
+
             return;
         }
 
@@ -78,8 +85,8 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
 
     private function nullifyEntry($token)
     {
-        $epochZero  = "1970-01-01 00:00:00";
-        $newToken   = bin2hex(random_bytes(16));
+        $epochZero = '1970-01-01 00:00:00';
+        $newToken = bin2hex(random_bytes(16));
 
         $sql = 'UPDATE ' . _DB_PREFIX_ . 'psemailvalidation 
                 SET token = "' . $newToken . '", date_added = "' . $epochZero . '"
@@ -101,6 +108,7 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
         }
 
         $customer->active = true;
+
         return $customer->save();
     }
 
@@ -115,7 +123,7 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
 
         $this->context->customer = $customer;
         $cookie = $this->context->cookie;
-        $cookie->id_customer = (int)$customer->id;
+        $cookie->id_customer = (int) $customer->id;
         $cookie->customer_lastname = $customer->lastname;
         $cookie->customer_firstname = $customer->firstname;
         $cookie->email = $customer->email;
@@ -144,7 +152,7 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
 
         $this->context->cart = $cart;
         $cookie = $this->context->cookie;
-        $cookie->id_cart = (int)$cart->id;
+        $cookie->id_cart = (int) $cart->id;
         $cookie->write();
         $cart->update();
 
@@ -155,7 +163,7 @@ class psemailvalidationactivateModuleFrontController extends ModuleFrontControll
     {
         $this->context->smarty->assign([
             'redirectUrl' => $this->context->link->getPageLink('order'),
-            'delay'       => 3000,
+            'delay' => 3000,
         ]);
         $this->setTemplate('module:' . $this->module->name . '/views/templates/front/success-redirect.tpl');
     }

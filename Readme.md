@@ -6,9 +6,6 @@ an account in your shop.  Offers seamless post-validation login and cart
 recovery.
 
 
-**Tested on PrestaShop 8.1.x** (Should be compatible with 1.7.x)
-
-
 Features
 --------
 
@@ -33,12 +30,6 @@ Either upload the `zip` file from the Back Office, or manually upload the module
 directory to your `modules` folder in your Prestashop installation directory.
 
 + [Download](https://github.com/guilleng/ps-email-validation/raw/master/psemailvalidation.zip)
-
-
-Configuration
--------------
-
-Enable/disable switch in the Back Office dashboard.
 
 
 Development
